@@ -65,7 +65,7 @@ if __name__ == '__main__':
     iou = 0.45
     score = 0.25
 
-    saved_model_loaded = tf.keras.models.load_model(model_path)
+    saved_model_loaded = tf.keras.models.load_model(model_path, compile=False)
     infer = saved_model_loaded.signatures['serving_default']
 
     original_image = cv2.imread(image_path)
