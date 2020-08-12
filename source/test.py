@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     # load faces
-    data = np.load('../videos/5-celebrity-faces-dataset.npz')
+    data = np.load('../5-celebrity-faces-dataset/5-celebrity-faces-dataset.npz')
     testX_faces = data['arr_2']
     # load dataset
-    dataset = np.load('../videos/5-celebrity-faces-embedding.npz')
+    dataset = np.load('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz')
     trainX, trainy, testX, testy = dataset['arr_0'], dataset['arr_1'], dataset['arr_2'], dataset['arr_3']
     # normalize input
     in_encoder = Normalizer(norm='l2')
@@ -36,6 +36,7 @@ if __name__ == '__main__':
     samples = np.expand_dims(random_face_emb, axis=0)
     yhat_class = model.predict(samples)
     yhat_prob = model.predict_proba(samples)
+    print(yhat_prob)
     # get name
     class_index = yhat_class[0]
     class_prob = yhat_prob[0, class_index]*100
@@ -47,3 +48,8 @@ if __name__ == '__main__':
     title = '{} {}'.format(predict_name[0], class_prob)
     plt.title(title)
     plt.show()
+
+    # get name
+    name = out_encoder.classes_
+    name = name[np.argmax(yhat_prob[0])]
+    print(name)

@@ -10,11 +10,12 @@ import cv2
 import random
 import time
 from source.detect_face import draw_bbox
+from source.embedding_face import extract_faces, get_embedding
 
 
 if __name__ == '__main__':
     # load dataset
-    dataset = np.load('../videos/5-celebrity-faces-embedding.npz')
+    dataset = np.load('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz')
     trainX, trainy, testX, testy = dataset['arr_0'], dataset['arr_1'], dataset['arr_2'], dataset['arr_3']
     # normalize input
     in_encoder = Normalizer(norm='l2')
@@ -22,52 +23,62 @@ if __name__ == '__main__':
     # label encode target
     out_encoder = LabelEncoder()
     out_encoder.fit(trainy)
+
+    class_name = out_encoder.classes_
     trainy = out_encoder.transform(trainy)
     # fit model
     model = SVC(kernel='linear', probability=True)
     model.fit(trainX, trainy)
 
-    # input_size = 416
-    # image_path = '../image/bao_ngu.jpg'
-    # model_path = '../models/keras_model/yolov4-416-face'
-    #
-    # iou = 0.45
-    # score = 0.25
-    #
-    # saved_model_loaded = tf.keras.models.load_model(model_path)
-    # infer = saved_model_loaded.signatures['serving_default']
-    #
-    # ben_video = cv2.VideoCapture('../videos/ben_afleck/ben afleck.mp4')
-    # ret, frame = ben_video.read()
-    #
-    # while ret:
-    #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #
-    #     image_data = cv2.resize(frame, (input_size, input_size))
-    #     image_data = image_data / 255.
-    #
-    #     images_data = []
-    #     for i in range(1):
-    #         images_data.append(image_data)
-    #     images_data = np.asarray(images_data).astype(np.float32)
-    #     batch_data = tf.constant(images_data)
-    #     pred_bbox = infer(batch_data)
-    #     for key, value in pred_bbox.items():
-    #         boxes = value[:, :, 0:4]
-    #         pred_conf = value[:, :, 4:]
-    #
-    #     boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
-    #         boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
-    #         scores=tf.reshape(
-    #             pred_conf, (tf.shape(pred_conf)[0], -1, tf.shape(pred_conf)[-1])),
-    #         max_output_size_per_class=50,
-    #         max_total_size=50,
-    #         iou_threshold=iou,
-    #         score_threshold=score
-    #     )
-    #     pred_bbox = [boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()]
-    #     frame = draw_bbox(frame, pred_bbox)
-    #     cv2.imshow('frame', frame)
-    #     ret, frame = ben_video.read()
-    #     if cv2.waitKey(1) & 0xFF == ord('q'):
-    #         break
+    input_size = 416
+    image_path = '../image/bao_ngu.jpg'
+    model_path = '../models/keras_model/yolov4-416-face'
+    # iou score thresshold
+    iou = 0.45
+    score = 0.25
+    threshold = 0.8
+    # load model yolov4-face
+    saved_model_loaded = tf.keras.models.load_model(model_path, compile=False)
+    infer = saved_model_loaded.signatures['serving_default']
+
+    # load model facenet
+    facenet = tf.keras.models.load_model('../models/keras_model/facenet_keras.h5', compile=False)
+
+    ben_video = cv2.VideoCapture('../videos/ben_afleck/ben afleck.mp4')
+    ret, frame = ben_video.read()
+
+    while ret:
+        boxes, faces_array = extract_faces(frame, infer)
+        # embedding face
+        embedded_faces = []
+        for i in range(len(faces_array)):
+            embedded_face = faces_array[i]
+            embedded_face = get_embedding(facenet, embedded_face)
+            embedded_faces.append(embedded_face)
+
+        # predict face
+        yhat_proba = model.predict_proba(embedded_faces)
+        predict_names = []
+        for proba in yhat_proba:
+            max_proba = np.argmax(proba)
+            if proba[max_proba] > threshold:
+                predict_names.append(class_name[max_proba])
+            else:
+                predict_names.append("Unknown")
+
+        for i in range(len(boxes)):
+            # get box
+            x1, y1, x2, y2 = boxes[i]
+            # draw box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (80, 18, 236), 2)
+            cv2.rectangle(frame, (x1, y2 - 20), (x2, y2), (80, 18, 236), cv2.FILLED)
+            font = cv2.FONT_HERSHEY_DUPLEX
+            # set name
+            label = "{}".format(predict_names[i])
+            # input name of face
+            cv2.putText(frame, label, (x1 + 6, y2 - 6), font, 0.5, (255, 255, 255), 1)
+
+        cv2.imshow('frame', frame)
+        ret, frame = ben_video.read()
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
