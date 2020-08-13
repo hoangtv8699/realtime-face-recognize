@@ -1,10 +1,10 @@
 from PIL import Image
 import numpy as np
-from mtcnn.mtcnn import MTCNN
-import matplotlib.pyplot as plt
+# from mtcnn.mtcnn import MTCNN
+# import matplotlib.pyplot as plt
 import os
 import tensorflow as tf
-import sklearn
+# import sklearn
 import cv2
 
 input_size = 416
@@ -13,8 +13,6 @@ model_path = '../models/keras_model/yolov4-416-face'
 
 iou = 0.45
 score = 0.25
-
-
 
 
 # extract a single face from given photo

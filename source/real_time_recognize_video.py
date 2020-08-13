@@ -48,6 +48,7 @@ if __name__ == '__main__':
     ret, frame = ben_video.read()
 
     while ret:
+        seconds = time.time()
         boxes, faces_array = extract_faces(frame, infer)
         # embedding face
         embedded_faces = []
@@ -79,6 +80,8 @@ if __name__ == '__main__':
             cv2.putText(frame, label, (x1 + 6, y2 - 6), font, 0.5, (255, 255, 255), 1)
 
         cv2.imshow('frame', frame)
+        print(time.time() - seconds)
+        print(time.time() - seconds)
         ret, frame = ben_video.read()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

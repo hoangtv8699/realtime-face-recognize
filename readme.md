@@ -8,3 +8,5 @@ note that you might want to change the obj.names file in config.py to your custo
 #
 use embedding_face.py for embedding faces using [facenet_keras](https://drive.google.com/drive/folders/1pwQ3H4aJ8a6yyJHZkTwtjcL4wYWQb7bn) model.
  Remember set the folder face like folder 5-celebrity-faces-dataset and change directory as well
+#
+ultra light detect need tensorflow 1.13.1. i learn from [this page](https://towardsdatascience.com/real-time-face-recognition-with-cpu-983d35cc3ec5)
