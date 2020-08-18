@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     input_size = 416
     image_path = '../image/bao_ngu.jpg'
-    model_path = '../models/keras_model/yolov4-416-face'
+    model_path = '../models/keras_model/yolov4-face-tiny-416'
     # iou score thresshold
     iou = 0.45
     score = 0.25
@@ -50,22 +50,22 @@ if __name__ == '__main__':
     while ret:
         seconds = time.time()
         boxes, faces_array = extract_faces(frame, infer)
-        # embedding face
-        embedded_faces = []
-        for i in range(len(faces_array)):
-            embedded_face = faces_array[i]
-            embedded_face = get_embedding(facenet, embedded_face)
-            embedded_faces.append(embedded_face)
-
-        # predict face
-        yhat_proba = model.predict_proba(embedded_faces)
-        predict_names = []
-        for proba in yhat_proba:
-            max_proba = np.argmax(proba)
-            if proba[max_proba] > threshold:
-                predict_names.append(class_name[max_proba])
-            else:
-                predict_names.append("Unknown")
+        # # embedding face
+        # embedded_faces = []
+        # for i in range(len(faces_array)):
+        #     embedded_face = faces_array[i]
+        #     embedded_face = get_embedding(facenet, embedded_face)
+        #     embedded_faces.append(embedded_face)
+        #
+        # # predict face
+        # yhat_proba = model.predict_proba(embedded_faces)
+        # predict_names = []
+        # for proba in yhat_proba:
+        #     max_proba = np.argmax(proba)
+        #     if proba[max_proba] > threshold:
+        #         predict_names.append(class_name[max_proba])
+        #     else:
+        #         predict_names.append("Unknown")
 
         for i in range(len(boxes)):
             # get box
@@ -75,13 +75,12 @@ if __name__ == '__main__':
             cv2.rectangle(frame, (x1, y2 - 20), (x2, y2), (80, 18, 236), cv2.FILLED)
             font = cv2.FONT_HERSHEY_DUPLEX
             # set name
-            label = "{}".format(predict_names[i])
+            # label = "{}".format(predict_names[i])
+            label = "face"
             # input name of face
             cv2.putText(frame, label, (x1 + 6, y2 - 6), font, 0.5, (255, 255, 255), 1)
-
+        print(time.time() - seconds)
         cv2.imshow('frame', frame)
-        print(time.time() - seconds)
-        print(time.time() - seconds)
         ret, frame = ben_video.read()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

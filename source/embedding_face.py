@@ -6,6 +6,7 @@ import os
 import tensorflow as tf
 # import sklearn
 import cv2
+import time
 
 input_size = 416
 image_path = '../image/bao_ngu.jpg'
@@ -30,7 +31,9 @@ def extract_face(filename, detector, require_size=(160, 160)):
     images_data = np.asarray(images_data).astype(np.float32)
     # detect face
     batch_data = tf.constant(images_data)
+    seconds = time.time()
     pred_bbox = detector(batch_data)
+    print(time.time() - seconds)
     for key, value in pred_bbox.items():
         boxes = value[:, :, 0:4]
         pred_conf = value[:, :, 4:]
@@ -161,32 +164,32 @@ def get_embedding(model, face_pixels):
     return yhat[0]
 
 
-# if __name__ == '__main__':
-#     saved_model_loaded = tf.keras.models.load_model(model_path)
-#     infer = saved_model_loaded.signatures['serving_default']
-#     # load train dataset
-#     trainX, trainy = load_dataset('../5-celebrity-faces-dataset/train/', infer)
-#     print(trainX.shape, trainy.shape)
-#     # load test dataset
-#     testX, testy = load_dataset('../5-celebrity-faces-dataset/val/', infer)
-#     # load model
-#     model = tf.keras.models.load_model('../models/keras_model/facenet_keras.h5')
-#     print('loaded model')
-#     # save face dataset
-#     np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-dataset.npz', trainX, trainy, testX, testy)
-#     # convert each face in train set to embedding
-#     newTrain = list()
-#     for face_pixel in trainX:
-#         embedding = get_embedding(model, face_pixel)
-#         newTrain.append(embedding)
-#     newTrain = np.asarray(newTrain)
-#     print(newTrain.shape)
-#     # convert each image in test set to embedding
-#     newTest = list()
-#     for face_pixel in testX:
-#         embedding = get_embedding(model, face_pixel)
-#         newTest.append(embedding)
-#     newTest = np.asarray(newTest)
-#     print(newTest.shape)
-#     # save arrays to one file in compressed format
-#     np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz', newTrain, trainy, newTest, testy)
+if __name__ == '__main__':
+    saved_model_loaded = tf.keras.models.load_model(model_path)
+    infer = saved_model_loaded.signatures['serving_default']
+    # load train dataset
+    trainX, trainy = load_dataset('../5-celebrity-faces-dataset/train/', infer)
+    print(trainX.shape, trainy.shape)
+    # load test dataset
+    testX, testy = load_dataset('../5-celebrity-faces-dataset/val/', infer)
+    # load model
+    model = tf.keras.models.load_model('../models/keras_model/facenet_keras.h5')
+    print('loaded model')
+    # save face dataset
+    np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-dataset.npz', trainX, trainy, testX, testy)
+    # convert each face in train set to embedding
+    newTrain = list()
+    for face_pixel in trainX:
+        embedding = get_embedding(model, face_pixel)
+        newTrain.append(embedding)
+    newTrain = np.asarray(newTrain)
+    print(newTrain.shape)
+    # convert each image in test set to embedding
+    newTest = list()
+    for face_pixel in testX:
+        embedding = get_embedding(model, face_pixel)
+        newTest.append(embedding)
+    newTest = np.asarray(newTest)
+    print(newTest.shape)
+    # save arrays to one file in compressed format
+    np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz', newTrain, trainy, newTest, testy)
