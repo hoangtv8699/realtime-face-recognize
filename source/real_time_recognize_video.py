@@ -10,8 +10,7 @@ import cv2
 import random
 import time
 from source.detect_face import draw_bbox
-from source.embedding_face import extract_faces, get_embedding
-
+from source.embedding_face import extract_faces, get_embeddings
 
 if __name__ == '__main__':
     # load dataset
@@ -36,7 +35,7 @@ if __name__ == '__main__':
     # iou score thresshold
     iou = 0.45
     score = 0.25
-    threshold = 0.8
+    threshold = 0.25
     # load model yolov4-face
     saved_model_loaded = tf.keras.models.load_model(model_path, compile=False)
     infer = saved_model_loaded.signatures['serving_default']
@@ -50,22 +49,27 @@ if __name__ == '__main__':
     while ret:
         seconds = time.time()
         boxes, faces_array = extract_faces(frame, infer)
-        # # embedding face
+        # embedding face
+        # seconds = time.time()
         # embedded_faces = []
         # for i in range(len(faces_array)):
         #     embedded_face = faces_array[i]
         #     embedded_face = get_embedding(facenet, embedded_face)
         #     embedded_faces.append(embedded_face)
-        #
-        # # predict face
-        # yhat_proba = model.predict_proba(embedded_faces)
-        # predict_names = []
-        # for proba in yhat_proba:
-        #     max_proba = np.argmax(proba)
-        #     if proba[max_proba] > threshold:
-        #         predict_names.append(class_name[max_proba])
-        #     else:
-        #         predict_names.append("Unknown")
+
+        embedded_faces = get_embeddings(facenet, faces_array)
+
+        # print(time.time() - seconds)
+        # predict face
+        yhat_proba = model.predict_proba(embedded_faces)
+        yhat_proba = np.asarray(yhat_proba)
+        predict_names = []
+        for proba in yhat_proba:
+            max_proba = np.argmax(proba)
+            if proba[max_proba] > threshold:
+                predict_names.append(class_name[max_proba])
+            else:
+                predict_names.append("Unknown")
 
         for i in range(len(boxes)):
             # get box
@@ -76,7 +80,7 @@ if __name__ == '__main__':
             font = cv2.FONT_HERSHEY_DUPLEX
             # set name
             # label = "{}".format(predict_names[i])
-            label = "face"
+            label = predict_names[i]
             # input name of face
             cv2.putText(frame, label, (x1 + 6, y2 - 6), font, 0.5, (255, 255, 255), 1)
         print(time.time() - seconds)

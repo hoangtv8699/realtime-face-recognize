@@ -13,7 +13,7 @@ from source.detect_face import draw_bbox
 if __name__ == '__main__':
     input_size = 416
     image_path = '../image/bao_ngu.jpg'
-    model_path = '../models/keras_model/yolov4-416-face'
+    model_path = '../models/keras_model/yolov4-face-416'
 
     iou = 0.45
     score = 0.25

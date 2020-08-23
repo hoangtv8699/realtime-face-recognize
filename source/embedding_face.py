@@ -10,7 +10,7 @@ import time
 
 input_size = 416
 image_path = '../image/bao_ngu.jpg'
-model_path = '../models/keras_model/yolov4-416-face'
+model_path = '../models/keras_model/yolov4-face-416'
 
 iou = 0.45
 score = 0.25
@@ -27,13 +27,10 @@ def extract_face(filename, detector, require_size=(160, 160)):
     image_data = cv2.resize(original_image, (input_size, input_size))
     image_data = image_data / 255.
 
-    images_data = [image_data]
-    images_data = np.asarray(images_data).astype(np.float32)
+    images_data = np.expand_dims(image_data, axis=0).astype(np.float32)
     # detect face
     batch_data = tf.constant(images_data)
-    seconds = time.time()
     pred_bbox = detector(batch_data)
-    print(time.time() - seconds)
     for key, value in pred_bbox.items():
         boxes = value[:, :, 0:4]
         pred_conf = value[:, :, 4:]
@@ -47,18 +44,18 @@ def extract_face(filename, detector, require_size=(160, 160)):
         iou_threshold=iou,
         score_threshold=score
     )
-    box = boxes[0][0]
-    y1 = int(box[0] * image_h)
-    y2 = int(box[2] * image_h)
-    x1 = int(box[1] * image_w)
-    x2 = int(box[3] * image_w)
+    boxes, scores, classes, valid_detections = boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()
+
+    y1 = int(boxes[0][0][0] * image_h)
+    y2 = int(boxes[0][0][2] * image_h)
+    x1 = int(boxes[0][0][1] * image_w)
+    x2 = int(boxes[0][0][3] * image_w)
 
     # extract face
     original_image = original_image[y1:y2, x1:x2, :]
     # resize image
-    image = Image.fromarray(original_image)
-    image = image.resize(require_size)
-    face_array = np.asarray(image)
+    face_array = cv2.resize(original_image, require_size)
+    face_array = np.asarray(face_array)
     return face_array
 
 
@@ -69,11 +66,11 @@ def extract_faces(frame, detector, require_size=(160, 160)):
     image_data = cv2.resize(frame, (input_size, input_size))
     image_data = image_data / 255.
 
-    images_data = [image_data]
-    images_data = np.asarray(images_data).astype(np.float32)
+    images_data = np.expand_dims(image_data, axis=0).astype(np.float32)
     # detect face
     batch_data = tf.constant(images_data)
     pred_bbox = detector(batch_data)
+
     for key, value in pred_bbox.items():
         boxes = value[:, :, 0:4]
         pred_conf = value[:, :, 4:]
@@ -88,30 +85,26 @@ def extract_faces(frame, detector, require_size=(160, 160)):
         score_threshold=score
     )
 
-    # boxes, scores, classes, valid_detections = boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()
+    boxes, scores, classes, valid_detections = boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()
 
-    new_boxes = list()
-    faces_array = list()
+    new_boxes = []
+    faces_array = []
 
     for i in range(valid_detections[0]):
         if int(classes[0][i]) < 0 or int(classes[0][i]) > 1: continue
-        box = boxes[0][i]
-        y1 = int(box[0] * image_h)
-        y2 = int(box[2] * image_h)
-        x1 = int(box[1] * image_w)
-        x2 = int(box[3] * image_w)
-
+        y1 = int(boxes[0][i][0] * image_h)
+        x1 = int(boxes[0][i][1] * image_w)
+        y2 = int(boxes[0][i][2] * image_h)
+        x2 = int(boxes[0][i][3] * image_w)
         # extract face
         face = frame[y1:y2, x1:x2, :]
         # resize face
-        face_array = Image.fromarray(face)
-        face_array = face_array.resize(require_size)
+        face_array = cv2.resize(face, require_size)
         face_array = np.asarray(face_array)
         # store
         new_boxes.append([x1, y1, x2, y2])
         faces_array.append(face_array)
-
-    return new_boxes, faces_array
+    return np.asarray(new_boxes), np.asarray(faces_array)
 
 
 # load images and extract faces for all images in directory
@@ -164,6 +157,17 @@ def get_embedding(model, face_pixels):
     return yhat[0]
 
 
+def get_embeddings(model, face_pixels):
+    for i in range(len(face_pixels)):
+        # scales pixels values
+        face_pixels[i] = face_pixels[i].astype('float32')
+        # standardize pixel values across channels (global)
+        mean, std = face_pixels[i].mean(), face_pixels[i].std()
+        face_pixels[i] = (face_pixels[i] - mean) / std
+    yhat = model.predict(face_pixels)
+    return yhat
+
+
 if __name__ == '__main__':
     saved_model_loaded = tf.keras.models.load_model(model_path)
     infer = saved_model_loaded.signatures['serving_default']
@@ -192,4 +196,5 @@ if __name__ == '__main__':
     newTest = np.asarray(newTest)
     print(newTest.shape)
     # save arrays to one file in compressed format
-    np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz', newTrain, trainy, newTest, testy)
+    np.savez_compressed('../5-celebrity-faces-dataset/5-celebrity-faces-embedding.npz', newTrain, trainy, newTest,
+                        testy)
